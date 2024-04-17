@@ -78,6 +78,14 @@ func NewDeschedulerCommand(out io.Writer) *cobra.Command {
 			secureServing.DisableHTTP2 = !s.EnableHTTP2
 
 			ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+			// 在收到信号的时候，会自动触发 ctx 的 Done ，这个 stop 是不再捕获注册的信号的意思，算是一种释放资源（同时也会取消 ctx）。
+			/*
+					信号处理机制:
+					1. 信号是一种进程间通信机制，用于通知目标进程发生了某种事件。
+					sigChan := make(chan os.Signal, 1)
+				    signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+				    当出现 syscall.SIGINT, syscall.SIGTERM 信号时，会将信号写入 sigChan 通道。
+			*/
 
 			pathRecorderMux := mux.NewPathRecorderMux("descheduler")
 			if !s.DisableMetrics {
@@ -87,17 +95,21 @@ func NewDeschedulerCommand(out io.Writer) *cobra.Command {
 			healthz.InstallHandler(pathRecorderMux, healthz.NamedCheck("Descheduler", healthz.PingHealthz.Check))
 
 			stoppedCh, _, err := secureServing.Serve(pathRecorderMux, 0, ctx.Done())
+			// 当一个 channel 为空时，关闭通道会停止等待阻塞。
 			if err != nil {
 				klog.Fatalf("failed to start secure server: %v", err)
 				return err
 			}
-
+			// 儿子 context 取消，不会影响父亲 context。
+			// 如果要把父亲 context 的取消权放到下一级函数中，需要给函数传入 cancel。
 			if err = Run(ctx, s); err != nil {
+				// Run 没有权利关闭 ctx。
 				klog.ErrorS(err, "descheduler server")
 				return err
 			}
 
 			done()
+			// channel 学习：https://www.cnblogs.com/jiujuan/p/16014608.html。
 			// wait for metrics server to close
 			<-stoppedCh
 

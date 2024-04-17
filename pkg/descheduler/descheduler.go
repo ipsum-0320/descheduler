@@ -387,6 +387,8 @@ func RunDeschedulerStrategies(ctx context.Context, rs *options.DeschedulerServer
 	ctx, span = tracing.Tracer().Start(ctx, "RunDeschedulerStrategies")
 	defer span.End()
 
+	// sharedInformerFactory 使用工厂模式来生成各类的 Informer。
+	// 参考文章：https://xieys.club/kubernetes-informer-1/
 	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(rs.Client, 0, informers.WithTransform(trimManagedFields))
 	nodeLister := sharedInformerFactory.Core().V1().Nodes().Lister()
 
@@ -417,6 +419,7 @@ func RunDeschedulerStrategies(ctx context.Context, rs *options.DeschedulerServer
 
 	wait.NonSlidingUntil(func() {
 		// A next context is created here intentionally to avoid nesting the spans via context.
+		// wait.NonSlidingUntil 是一个同步方法，其 period 包含 f() 的执行时间。
 		sCtx, sSpan := tracing.Tracer().Start(ctx, "NonSlidingUntil")
 		defer sSpan.End()
 		nodes, err := nodeutil.ReadyNodes(sCtx, rs.Client, nodeLister, nodeSelector)

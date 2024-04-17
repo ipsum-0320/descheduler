@@ -86,6 +86,7 @@ func newDefaultComponentConfig() (*componentconfig.DeschedulerConfiguration, err
 }
 
 // AddFlags adds flags for a specific SchedulerServer to the specified FlagSet
+// 命令行设置参数。
 func (rs *DeschedulerServer) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&rs.DeschedulingInterval, "descheduling-interval", rs.DeschedulingInterval, "Time interval between two consecutive descheduler executions. Setting this value instructs the descheduler to run in a continuous loop at the interval specified.")
 	fs.StringVar(&rs.ClientConnection.Kubeconfig, "kubeconfig", rs.ClientConnection.Kubeconfig, "File with kube configuration. Deprecated, use client-connection-kubeconfig instead.")
