@@ -45,6 +45,7 @@ func ReadyNodes(ctx context.Context, client clientset.Interface, nodeLister list
 	if nodes, err = nodeLister.List(ns); err != nil {
 		return []*v1.Node{}, err
 	}
+	// nodeLister 是从 informer cache 中拿的数据。
 
 	if len(nodes) == 0 {
 		klog.V(2).InfoS("Node lister returned empty list, now fetch directly")
