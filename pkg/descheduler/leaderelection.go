@@ -56,6 +56,7 @@ func NewLeaderElection(
 		return fmt.Errorf("name may not be empty")
 	}
 
+	// 基于 k8s 租约机制实现分布式锁。
 	lock, err := resourcelock.New(
 		LeaderElectionConfig.ResourceLock,
 		LeaderElectionConfig.ResourceNamespace,
